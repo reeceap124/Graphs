@@ -1,3 +1,18 @@
+import random
+
+class Queue():
+    def __init__(self):
+        self.queue = []
+    def enqueue(self, value):
+        self.queue.append(value)
+    def dequeue(self):
+        if self.size() > 0:
+            return self.queue.pop(0)
+        else:
+            return None
+    def size(self):
+        return len(self.queue)
+
 class User:
     def __init__(self, name):
         self.name = name
@@ -27,6 +42,11 @@ class SocialGraph:
         self.last_id += 1  # automatically increment the ID to assign the new user
         self.users[self.last_id] = User(name)
         self.friendships[self.last_id] = set()
+    
+    def fisher_yates_shuffle(self, l):
+        for i in range(0, len(l)):
+            random_index = random.randint(i, len(l) - 1)
+            l[random_index], l[i] = l[i], l[random_index]
 
     def populate_graph(self, num_users, avg_friendships):
         """
@@ -38,6 +58,7 @@ class SocialGraph:
 
         The number of users must be greater than the average number of friendships.
         """
+
         # Reset graph
         self.last_id = 0
         self.users = {}
@@ -45,8 +66,33 @@ class SocialGraph:
         # !!!! IMPLEMENT ME
 
         # Add users
+        for i in range(num_users):
+            self.add_user(i)
 
         # Create friendships
+        friendships = []
+        for user in range(1, self.last_id + 1):
+            for friend in range(user + 1, num_users + 1):
+                friendships.append((user, friend))
+        
+        self.fisher_yates_shuffle(friendships)
+        total_friendships = num_users * avg_friendships
+        random_friendships = friendships[:total_friendships//2]
+        for friendship in random_friendships:
+            self.add_friendship(friendship[0], friendship[1])
+
+
+        # for user in self.users:
+        #     sample_size = random.randint(1, (avg_friendships * 2))
+
+        #     possible_friends = self.users.copy()
+        #     del possible_friends[user]
+
+        #     friends = random.sample(set(possible_friends.keys()), sample_size)
+        #     for friend in friends:
+        #         self.add_friendship(user, friend)
+        #     print('User: ', user, self.friendships[user])
+
 
     def get_all_social_paths(self, user_id):
         """
@@ -57,7 +103,21 @@ class SocialGraph:
 
         The key is the friend's ID and the value is the path.
         """
-        visited = {}  # Note that this is a dictionary, not a set
+        visited = {}  # Note that this is a dictionary, not a set. Add path to visited user
+        #BFT with path so that we can get shortest path to each user
+        q = Queue()
+        q.enqueue([user_id])
+        while q.size():
+            path = q.dequeue()
+            user = path[-1]
+
+            if user not in visited:
+                visited[user] = path
+                for  friend in self.friendships[user]:
+                    newPath = path.copy()
+                    newPath.append(friend)
+                    q.enqueue(newPath)
+
         # !!!! IMPLEMENT ME
         return visited
 
