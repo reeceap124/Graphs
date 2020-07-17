@@ -93,6 +93,12 @@ class SocialGraph:
         #         self.add_friendship(user, friend)
         #     print('User: ', user, self.friendships[user])
 
+    def linear_populate_graph(self, user_id):
+        self.last_id = 0
+        self.users = {}
+        self.friendships = {}
+
+        
 
     def get_all_social_paths(self, user_id):
         """
