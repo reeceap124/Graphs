@@ -15,8 +15,8 @@ world = World()
 # map_file = "maps/test_line.txt"
 # map_file = "maps/test_cross.txt"
 # map_file = "maps/test_loop.txt"
-map_file = "maps/test_loop_fork.txt"
-# map_file = "maps/main_maze.txt"
+# map_file = "maps/test_loop_fork.txt"
+map_file = "maps/main_maze.txt"
 
 # Loads the map into a dictionary
 room_graph=literal_eval(open(map_file, "r").read())
@@ -35,13 +35,13 @@ class Map_Graph:
         self.rooms = {}
 
     def add_room(self, room):
+        if room == None:
+            breakpoint()
         if room not in self.rooms:
             #add room with unexplored directions
-            self.rooms[room] = dict()
+            self.rooms[room] = {}
             for direction in player.current_room.get_exits():
                 self.rooms[room][direction] = '?'
-
-    
 
     def get_opposite(self, direction):
         if direction == 'n':
@@ -61,16 +61,6 @@ class Map_Graph:
         self.rooms[player.current_room.id][opposite] = room
         room = player.current_room.id
 
-    # def examine_room(self, room):
-        
-            
-    #     if len(traversal_path):
-    #         last = traversal_path[-1]
-    #         new_current = player.current_room.id
-    #         self.update_directions(self.current, last, new_current)
-    #         self.current = player.current_room.id
-            # breakpoint()q
-
     def check_unexplored(self, room):
         if room not in self.rooms:
             self.add_room(room)
@@ -80,72 +70,51 @@ class Map_Graph:
                 return True
         return False
     
-    def find_nearest_unexplored(self, current_room): #passing in player room id
-        # print('Starting the BFS\n', 'Room:', current_room)
-        # # breakpoint()
-        # visited_set = set()
-        # queue = Queue()
-        # queue.enqueue([])
-        # pathway = Queue()
-        # pathway.enqueue([current_room])
-        # # breakpoint()
-        # while pathway.size():
-        #     path = queue.dequeue()
-        #     cur_route = pathway.dequeue()
-        #     cur_room = cur_route[-1]
-        #     print('CURRENT ROOM: ', cur_room, '\n\nROOMIES: ', self.rooms)
-        #     if cur_room not in visited_set:
-        #         if self.check_unexplored(cur_room):
-        #             traversal_path.extend(path)
-        #             visited_set = set()
-        #             print('found one', cur_room)
-        #             return cur_room
-        #         visited_set.add(cur_room)
-        #         for route in self.rooms[cur_room]:
-        #             print(cur_room, route)
-        #             newPath = path.copy()
-        #             newRoute = cur_route.copy()
-        #             newPath.append(route)
-        #             queue.enqueue(newPath)
-        #             if player.current_room.get_room_in_direction(route).id not in visited_set:
-        #                 player.travel(route)
-        #                 newRoute.append(player.current_room.id)
-        #                 pathway.enqueue(newRoute)
-        #         print("THIS IS A BREAK 2")
-                # breakpoint()
-        visited = set()
-        queue = Queue()
-        queue.enqueue([current_room])
-        while queue.size():
+    def find_nearest_unexplored(self, current_room):
+        visited_set = set()
+        queue = Queue() #for tracking steps
+        queue.enqueue([])
+        pathway = Queue() #for tracking the route taken while searching for route
+        pathway.enqueue([current_room])
+        start_room = player.current_room
+        while pathway.size():
+            
             path = queue.dequeue()
-            room = path[-1]
-            if room not in visited:
-                if self.check_unexplored(room):
-                    return path[-1]
-                visited.add(room)
-                for route in self.rooms[room]:
-                    newPath = path.copy()
-                    faker = player.deepcopy()
-                    faker.travel(route)
-                    newPath.append(faker.current_room.id)
-                print('EXITING THE IF STATEMENT')
-            print('EXITING THE WHILE LOOP')
-        print('EXITING THE BFS')
-        breakpoint()
+            cur_route = pathway.dequeue()
+            cur_room = cur_route[-1]
+            if cur_room not in visited_set:
+                for route in self.rooms[cur_room]:
+                    #resets the player location as we test out different routes
+                    player.current_room = start_room
+                    #Check to see if there's an unexplored route
+                    if self.rooms[cur_room][route] == '?':
+                        newPath = path.copy()
+                        newPath.append(route)
+                        return newPath
+                    #Otherwise add it to visited and check if there's any unvisited neighbors
+                    visited_set.add(cur_room)
+                    if self.rooms[cur_room][route] not in visited_set:
+                         newPath = path.copy()
+                         newPath.append(route)
+                         #traveling like this helped to clean up path and route issues
+                         for p in newPath:
+                             player.travel(p)
+                         queue.enqueue(newPath)
+                         newRoute = cur_route.copy()
+                         newRoute.append(player.current_room.id)
+                         pathway.enqueue(newRoute)
 
 
 
                 
 
 
-    def explore(self, starting_room): ##?? Do You want a default Starging Room?
-        # stack = Stack()
-        # stack.push(starting_room)
+    def explore(self, starting_room): 
         room = starting_room
-        print("STARTING: ", room)
-        while len(self.rooms)< len(room_graph): # while the whole graph has not been traveled
-            if self.check_unexplored(room): # if there is an unexplored route, take it
-                print("There are rooms to explore here", len(self.rooms))
+        # while the whole graph has not been traveled
+        while len(self.rooms)< len(room_graph): 
+            # if there is an unexplored route, take it
+            if self.check_unexplored(room): 
                 for direction in self.rooms[room]:
                     if self.rooms[room][direction] == '?':
                         traversal_path.append(direction)
@@ -153,30 +122,22 @@ class Map_Graph:
                         self.update_directions(room, direction)
                         room = player.current_room.id
                         break
-                    print("THIS IS A BREAK")
-                    # breakpoint()
-            
-            else: #find the nearest unexplored route none found in current room
-                print('LENGTH IN ELSE', len(self.rooms))
-                print('ELSE')
-                print('ELSE')
-                room = self.find_nearest_unexplored(player.current_room.id)
-        print('Finished Exploring')
-                
+                #find the nearest unexplored route none found in current room    
+            else: 
+                start_at = player.current_room
+                travel_along=self.find_nearest_unexplored(player.current_room.id)
+                #make sure we reset after testing out the different routes
+                player.current_room = start_at 
+                for direction in travel_along:
+                    traversal_path.append(direction)
+                    player.travel(direction)
+                    self.update_directions(room, direction)
+                    room = player.current_room.id
+
     
 
 mapping = Map_Graph()
 mapping.explore(player.current_room.id)
-
-
-
-
-
-#while loop checking if visited == rooms
-#Do a DFS looking for a room with no unexplored exits.
-    #Track path as I do this
-#When I hit this do a BFS to get nearest unexplored exit.
-    #add on path as doing this
 
 
 
